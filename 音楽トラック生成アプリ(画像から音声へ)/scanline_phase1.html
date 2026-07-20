@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCANLINE — 画像走査シンセサイザー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<style>
+  :root{
+    --bg: #0A0F0C;
+    --panel: #121a16;
+    --panel-2: #1a251f;
+    --grid-line: #223029;
+    --accent: #FFB020;
+    --accent-dim: #7A5A1E;
+    --text: #E7ECE7;
+    --text-dim: #8FA097;
+    --stop-color: #FF6B5D;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 32px 16px 60px;
+  }
+  .app {
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--grid-line);
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+  .brand span { color: var(--text-dim); font-weight: 400; font-size: 13px; margin-left: 10px; letter-spacing: 0; }
+  .status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+  .status .dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--grid-line);
+    margin-right: 6px;
+  }
+  .status.live .dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+  .dropzone {
+    border: 1px dashed var(--grid-line);
+    border-radius: 4px;
+    padding: 28px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+    background: var(--panel);
+  }
+  .dropzone:hover, .dropzone.drag {
+    border-color: var(--accent-dim);
+    background: var(--panel-2);
+  }
+  .dropzone p { margin: 0 0 4px; font-size: 14px; }
+  .dropzone .sub { color: var(--text-dim); font-size: 12px; }
+  .dropzone input { display: none; }
+
+  .sample-link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    margin-top: 10px;
+  }
+
+  .stage {
+    margin-top: 20px;
+    display: none;
+  }
+  .stage.show { display: block; }
+
+  .scope-row {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .axis-y {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+  }
+  .canvas-wrap {
+    position: relative;
+    flex: 1;
+    background: #000;
+    border: 1px solid var(--grid-line);
+    overflow: hidden;
+  }
+  .canvas-wrap canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+  }
+  #overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  .axis-x {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin: 6px 0 0 24px;
+  }
+
+  .controls {
+    margin-top: 24px;
+    background: var(--panel);
+    border: 1px solid var(--grid-line);
+    border-radius: 4px;
+    padding: 18px 20px;
+  }
+  .transport {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  button.transport-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 10px 22px;
+    border-radius: 3px;
+    border: 1px solid var(--accent-dim);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  button.transport-btn:hover:not(:disabled) { background: var(--accent); color: #0A0F0C; }
+  button.transport-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  button.transport-btn.stop { border-color: #7a3a32; color: var(--stop-color); }
+  button.transport-btn.stop:hover:not(:disabled) { background: var(--stop-color); color: #0A0F0C; }
+
+  .params {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 16px 24px;
+  }
+  .param label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 6px;
+  }
+  .param label b { color: var(--text); font-weight: 500; }
+  .param input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  .param select {
+    width: 100%;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--grid-line);
+    padding: 6px 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    border-radius: 3px;
+  }
+  .param .check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .param .check input { accent-color: var(--accent); }
+
+  .note {
+    margin-top: 20px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    border-top: 1px solid var(--grid-line);
+    padding-top: 14px;
+  }
+  .note b { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="brand">SCANLINE<span>画像走査シンセサイザー — Phase 1</span></div>
+    <div class="status" id="statusText"><span class="dot"></span>待機中</div>
+  </header>
+
+  <div class="dropzone" id="dropzone">
+    <p>クリックまたは画像をドラッグ&ドロップ</p>
+    <div class="sub">JPEG / PNG 対応 — 横方向を時間、縦方向を音程に変換します</div>
+    <input type="file" id="fileInput" accept="image/*">
+    <div><button class="sample-link" id="sampleBtn">サンプル画像で試す →</button></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="scope-row">
+      <div class="axis-y">↑ 白玉／アルペジオ／ベース／ドラム ↓</div>
+      <div class="canvas-wrap">
+        <canvas id="previewCanvas"></canvas>
+        <canvas id="overlay"></canvas>
+      </div>
+    </div>
+    <div class="axis-x">→ 時間</div>
+
+    <div class="controls">
+      <div class="transport">
+        <button class="transport-btn" id="playBtn">▶ 再生</button>
+        <button class="transport-btn stop" id="stopBtn" disabled>■ 停止</button>
+      </div>
+
+      <div class="params">
+        <div class="param">
+          <label>テンポ（1秒あたりのステップ数） <b id="tempoVal">8</b></label>
+          <input type="range" id="tempo" min="2" max="20" value="8" step="1">
+        </div>
+        <div class="param">
+          <label>時間解像度（横の分割数） <b id="colsVal">48</b></label>
+          <input type="range" id="cols" min="16" max="96" value="48" step="1">
+        </div>
+        <div class="param">
+          <label>音程解像度（縦の分割数） <b id="rowsVal">20</b></label>
+          <input type="range" id="rows" min="5" max="40" value="20" step="1">
+        </div>
+        <div class="param">
+          <label>無音しきい値 <b id="threshVal">0.15</b></label>
+          <input type="range" id="thresh" min="0" max="0.9" value="0.15" step="0.01">
+        </div>
+        <div class="param">
+          <label>音階</label>
+          <select id="scaleSelect">
+            <option value="pentatonic">ペンタトニック（協和音になりやすい）</option>
+            <option value="chromatic">クロマチック（画素をそのまま反映）</option>
+          </select>
+        </div>
+        <div class="param">
+          <label style="visibility:hidden">-</label>
+          <div class="check">
+            <input type="checkbox" id="invert">
+            <label for="invert" style="margin:0;">明暗を反転（明るい画素を鳴らす）</label>
+          </div>
+        </div>
+        <div class="param" style="grid-column: 1 / -1;">
+          <label>コード進行（カンマ区切り、時間軸に均等配置） <b>chords</b></label>
+          <input type="text" id="chordInput" value="Dm7, G7, Cmaj7, Am7"
+            style="width:100%; background:var(--panel-2); color:var(--text); border:1px solid var(--grid-line); padding:8px 10px; font-family:'JetBrains Mono',monospace; font-size:13px; border-radius:3px;">
+          <div style="color:var(--text-dim); font-size:11px; margin-top:4px; font-family:'JetBrains Mono',monospace;">分数コード: F/G, Caug/D　／　テンション: Dm7(9), G7(13), Cmaj7(#11)</div>
+        </div>
+        <div class="param">
+          <label style="visibility:hidden">-</label>
+          <div class="check">
+            <input type="checkbox" id="harmonize">
+            <label for="harmonize" style="margin:0;">メロディ／ベースをコードトーンにスナップ</label>
+          </div>
+        </div>
+        <div class="param">
+          <label>コード伴奏の音量 <b id="padVolVal">-14dB</b></label>
+          <input type="range" id="padVol" min="-30" max="-4" value="-14" step="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <b>変換ルール：</b>画像を指定の解像度に縮小し、各列（左→右）を時間の1ステップとして左から順に走査します。縦方向は4つの帯に分かれ、上から順に「シンセ：白玉（コード区間ごとに持続）」「シンセ：アルペジオ（1ステップごとに発音）」「ベース（コードのルート音を単音で）」「ドラム（ハイハット・スネア・キック）」に対応します。画素の暗さが音の強さになります。<br>
+      <b>コード進行：</b>入力したコードは走査時間全体に均等に割り当てられます。テンションは <code>Dm7(9)</code> のように括弧で追加でき（9, b9, #9, 11, #11, 13, b13 に対応）、分数コードは <code>F/G</code> のようにスラッシュで指定します。<br>
+      MP3などへの書き出しは次のフェーズで追加予定です。
+    </div>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const sampleBtn = document.getElementById('sampleBtn');
+  const stage = document.getElementById('stage');
+  const previewCanvas = document.getElementById('previewCanvas');
+  const overlay = document.getElementById('overlay');
+  const pctx = previewCanvas.getContext('2d');
+  const octx = overlay.getContext('2d');
+  const statusText = document.getElementById('statusText');
+
+  const playBtn = document.getElementById('playBtn');
+  const stopBtn = document.getElementById('stopBtn');
+
+  const tempoSlider = document.getElementById('tempo');
+  const colsSlider = document.getElementById('cols');
+  const rowsSlider = document.getElementById('rows');
+  const threshSlider = document.getElementById('thresh');
+  const scaleSelect = document.getElementById('scaleSelect');
+  const invertCheck = document.getElementById('invert');
+  const chordInput = document.getElementById('chordInput');
+  const harmonizeCheck = document.getElementById('harmonize');
+  const padVolSlider = document.getElementById('padVol');
+  const padVolVal = document.getElementById('padVolVal');
+
+  const tempoVal = document.getElementById('tempoVal');
+  const colsVal = document.getElementById('colsVal');
+  const rowsVal = document.getElementById('rowsVal');
+  const threshVal = document.getElementById('threshVal');
+
+  let sourceImage = null;
+  let columns = [];      // columns[c] = { arp:[{note,velocity}], bass:[{note,velocity}], drums:[{lane,velocity}] }
+  let chordData = { chords: [], segments: [], sustainSegments: [], sustainNotes: [] };
+  let numCols = 48, numRows = 20;
+  let synth = null;
+  let bassSynth = null;
+  let sustainSynth = null;
+  let heldSustainNotes = [];
+  let kickSynth = null, snareSynth = null, hihatSynth = null;
+  let padSynth = null;
+  let heldPadNotes = [];
+  let loop = null;
+  let currentStep = 0;
+  let rafId = null;
+  let isPlaying = false;
+
+  const SCALES = {
+    pentatonic: [0, 2, 4, 7, 9],
+    chromatic: [0,1,2,3,4,5,6,7,8,9,10,11]
+  };
+  const SUSTAIN_BASE_MIDI = 60; // C4 — top band, whole-note pad
+  const BASE_MIDI = 48; // C3 — arpeggio band
+  const BASS_BASE_MIDI = 28; // E1 — bass band (root note only)
+  const PAD_BASE_MIDI = 43; // G2, low register for chord pad
+
+  // ---------- vertical band layout: sustain / arpeggio / bass / drums, 25% each ----------
+  function computeBands(rows) {
+    const sustainEnd = Math.max(1, Math.floor(rows * 0.25));
+    const arpEnd = Math.max(sustainEnd + 1, Math.floor(rows * 0.5));
+    const bassEnd = Math.max(arpEnd + 1, Math.floor(rows * 0.75));
+    return {
+      sustainStart: 0, sustainEnd,
+      arpStart: sustainEnd, arpEnd,
+      bassStart: arpEnd, bassEnd,
+      drumStart: bassEnd, drumEnd: rows
+    };
+  }
+
+  function drumLaneForRow(r, drumStart, drumEnd) {
+    const bandSize = drumEnd - drumStart;
+    const rel = r - drumStart;
+    const third = bandSize / 3;
+    if (rel < third) return 'hihat';
+    if (rel < third * 2) return 'snare';
+    return 'kick';
+  }
+
+  // ---------- chord parsing ----------
+  const CHORD_TYPES = [
+    ['maj7', [0,4,7,11]], ['maj9', [0,4,7,11,14]], ['m7b5', [0,3,6,10]], ['dim7', [0,3,6,9]],
+    ['m7', [0,3,7,10]], ['m9', [0,3,7,10,14]], ['m6', [0,3,7,9]], ['madd9', [0,3,7,14]],
+    ['aug', [0,4,8]], ['m', [0,3,7]], ['dim', [0,3,6]], ['sus4', [0,5,7]], ['sus2', [0,2,7]],
+    ['add9', [0,4,7,14]], ['6', [0,4,7,9]], ['9', [0,4,7,10,14]], ['7', [0,4,7,10]],
+    ['maj', [0,4,7]], ['', [0,4,7]]
+  ];
+  const NOTE_MAP = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+  const TENSION_MAP = { '9': 14, 'b9': 13, '#9': 15, '11': 17, '#11': 18, '13': 21, 'b13': 20 };
+
+  function parseNoteLetter(raw) {
+    const m = raw.trim().match(/^([A-Ga-g])([#b]?)/);
+    if (!m) return null;
+    let pc = NOTE_MAP[m[1].toUpperCase()];
+    if (m[2] === '#') pc = (pc + 1) % 12;
+    if (m[2] === 'b') pc = (pc + 11) % 12;
+    return pc;
+  }
+
+  function parseChord(raw) {
+    const s = raw.trim();
+    let mainPart = s, bassPart = null;
+    const slashIdx = s.indexOf('/');
+    if (slashIdx !== -1) {
+      mainPart = s.slice(0, slashIdx).trim();
+      bassPart = s.slice(slashIdx + 1).trim();
+    }
+
+    // pull out a trailing tension list in parentheses, e.g. "Dm7(9)" or "G7(b9,13)"
+    let tensionStr = '';
+    const parenMatch = mainPart.match(/^(.*?)\(([^)]*)\)\s*$/);
+    if (parenMatch) {
+      mainPart = parenMatch[1].trim();
+      tensionStr = parenMatch[2];
+    }
+
+    const m = mainPart.match(/^([A-Ga-g])([#b]?)(.*)$/);
+    if (!m) return null;
+    const typeStr = m[3].trim();
+    let pc = parseNoteLetter(m[1] + m[2]);
+
+    let intervals = null;
+    for (const [key, iv] of CHORD_TYPES) {
+      if (typeStr === key) { intervals = [...iv]; break; }
+    }
+    if (!intervals) intervals = [0, 4, 7]; // 不明な表記は長三和音として扱う
+
+    tensionStr.split(',').map(t => t.trim()).filter(t => t.length > 0).forEach(t => {
+      const iv = TENSION_MAP[t];
+      if (iv === undefined) return;
+      const pcMod = ((iv % 12) + 12) % 12;
+      if (!intervals.some(existing => ((existing % 12) + 12) % 12 === pcMod)) intervals.push(iv);
+    });
+
+    const chordToneNotes = intervals.map(iv => Tone.Frequency(PAD_BASE_MIDI + pc + iv, 'midi').toNote());
+    const pitchClasses = intervals.map(iv => (pc + iv) % 12);
+
+    let notes = chordToneNotes;
+    let bassPc = pc; // root, unless a slash bass is given
+    if (bassPart) {
+      const parsedBassPc = parseNoteLetter(bassPart);
+      if (parsedBassPc !== null) {
+        bassPc = parsedBassPc;
+        const bassMidi = PAD_BASE_MIDI - 12 + bassPc;
+        const bassNote = Tone.Frequency(bassMidi, 'midi').toNote();
+        notes = [bassNote, ...chordToneNotes];
+        if (!pitchClasses.includes(bassPc)) pitchClasses.push(bassPc);
+      }
+    }
+
+    return { label: s, pc, bassPc, intervals, notes, pitchClasses };
+  }
+
+  function parseChordProgression(str) {
+    return str.split(',')
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+      .map(s => parseChord(s))
+      .filter(c => c !== null);
+  }
+
+  function assignChordSegments(totalCols) {
+    const chords = parseChordProgression(chordInput.value);
+    const segments = [];
+    if (chords.length === 0 || totalCols === 0) return { chords, segments };
+    const segLen = totalCols / chords.length;
+    for (let i = 0; i < chords.length; i++) {
+      const start = Math.floor(i * segLen);
+      const end = i === chords.length - 1 ? totalCols : Math.floor((i + 1) * segLen);
+      segments.push({ chordIndex: i, start, end });
+    }
+    return { chords, segments };
+  }
+
+  function chordAtColumn(data, col) {
+    const seg = data.segments.find(s => col >= s.start && col < s.end);
+    return seg ? data.chords[seg.chordIndex] : null;
+  }
+
+  function snapToChordTone(midi, pitchClasses) {
+    if (!pitchClasses || pitchClasses.length === 0) return midi;
+    let best = midi, bestDist = Infinity;
+    for (const pc of pitchClasses) {
+      for (const shift of [-12, 0, 12]) {
+        const candidate = midi - (((midi % 12) + 12) % 12) + pc + shift;
+        const dist = Math.abs(candidate - midi);
+        if (dist < bestDist) { bestDist = dist; best = candidate; }
+      }
+    }
+    return best;
+  }
+
+  // ---------- UI: slider labels ----------
+  tempoSlider.addEventListener('input', () => tempoVal.textContent = tempoSlider.value);
+  colsSlider.addEventListener('input', () => { colsVal.textContent = colsSlider.value; if (sourceImage) rebuild(); });
+  rowsSlider.addEventListener('input', () => { rowsVal.textContent = rowsSlider.value; if (sourceImage) rebuild(); });
+  threshSlider.addEventListener('input', () => { threshVal.textContent = threshSlider.value; if (sourceImage) rebuild(); });
+  scaleSelect.addEventListener('change', () => { if (sourceImage) rebuild(); });
+  invertCheck.addEventListener('change', () => { if (sourceImage) rebuild(); });
+  chordInput.addEventListener('change', () => { if (sourceImage) rebuild(); });
+  harmonizeCheck.addEventListener('change', () => { if (sourceImage) rebuild(); });
+  padVolSlider.addEventListener('input', () => {
+    padVolVal.textContent = padVolSlider.value + 'dB';
+    if (padSynth) padSynth.volume.value = parseFloat(padVolSlider.value);
+  });
+
+  // ---------- image loading ----------
+  dropzone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) loadFile(e.target.files[0]);
+  });
+  ['dragover','dragenter'].forEach(ev => dropzone.addEventListener(ev, (e) => {
+    e.preventDefault(); dropzone.classList.add('drag');
+  }));
+  ['dragleave','drop'].forEach(ev => dropzone.addEventListener(ev, (e) => {
+    e.preventDefault(); dropzone.classList.remove('drag');
+  }));
+  dropzone.addEventListener('drop', (e) => {
+    const f = e.dataTransfer.files[0];
+    if (f) loadFile(f);
+  });
+
+  function loadFile(file) {
+    const img = new Image();
+    img.onload = () => { sourceImage = img; rebuild(); };
+    img.src = URL.createObjectURL(file);
+  }
+
+  sampleBtn.addEventListener('click', () => {
+    const c = document.createElement('canvas');
+    c.width = 320; c.height = 180;
+    const cx = c.getContext('2d');
+    const grad = cx.createLinearGradient(0, 0, 320, 180);
+    grad.addColorStop(0, '#000'); grad.addColorStop(1, '#888');
+    cx.fillStyle = grad; cx.fillRect(0, 0, 320, 180);
+    cx.fillStyle = '#fff';
+    for (let i = 0; i < 6; i++) {
+      cx.beginPath();
+      cx.arc(30 + i * 55, 90 + Math.sin(i) * 40, 18, 0, Math.PI * 2);
+      cx.fill();
+    }
+    cx.strokeStyle = '#fff'; cx.lineWidth = 6;
+    cx.beginPath(); cx.moveTo(0, 150); cx.lineTo(320, 30); cx.stroke();
+    const img = new Image();
+    img.onload = () => { sourceImage = img; rebuild(); };
+    img.src = c.toDataURL();
+  });
+
+  // ---------- core conversion ----------
+  function rebuild() {
+    stopPlayback();
+    numCols = parseInt(colsSlider.value, 10);
+    numRows = parseInt(rowsSlider.value, 10);
+
+    // sample the image at (numCols x numRows) using an offscreen canvas
+    const off = document.createElement('canvas');
+    off.width = numCols; off.height = numRows;
+    const octxOff = off.getContext('2d');
+    octxOff.drawImage(sourceImage, 0, 0, numCols, numRows);
+    const data = octxOff.getImageData(0, 0, numCols, numRows).data;
+
+    const scaleArr = SCALES[scaleSelect.value];
+    const threshold = parseFloat(threshSlider.value);
+    const invert = invertCheck.checked;
+    const harmonize = harmonizeCheck.checked;
+
+    chordData = assignChordSegments(numCols);
+    const bands = computeBands(numRows);
+
+    function intensityAt(c, r) {
+      const idx = (r * numCols + c) * 4;
+      const lum = (0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2]) / 255;
+      return invert ? lum : (1 - lum); // default: dark pixels = louder
+    }
+
+    // ---- per-column layers: arpeggio (short notes), bass (single root note), drums ----
+    columns = [];
+    for (let c = 0; c < numCols; c++) {
+      const arp = [];
+      const bass = [];
+      const drums = [];
+      const chord = chordAtColumn(chordData, c);
+      const laneMax = { hihat: 0, snare: 0, kick: 0 };
+      let bassMax = 0;
+
+      for (let r = bands.arpStart; r < bands.arpEnd; r++) {
+        const intensity = intensityAt(c, r);
+        if (intensity < threshold) continue;
+        const bandRows = bands.arpEnd - bands.arpStart;
+        const degreeIndex = bandRows - 1 - (r - bands.arpStart);
+        const octave = Math.floor(degreeIndex / scaleArr.length);
+        const degree = degreeIndex % scaleArr.length;
+        let midi = BASE_MIDI + octave * 12 + scaleArr[degree];
+        if (harmonize && chord) midi = snapToChordTone(midi, chord.pitchClasses);
+        arp.push({ note: Tone.Frequency(midi, 'midi').toNote(), velocity: 0.15 + intensity * 0.75 });
+      }
+
+      for (let r = bands.bassStart; r < bands.bassEnd; r++) {
+        const intensity = intensityAt(c, r);
+        if (intensity > bassMax) bassMax = intensity;
+      }
+      if (bassMax >= threshold && chord) {
+        const bassMidi = BASS_BASE_MIDI + chord.bassPc;
+        bass.push({ note: Tone.Frequency(bassMidi, 'midi').toNote(), velocity: 0.25 + bassMax * 0.65 });
+      }
+
+      for (let r = bands.drumStart; r < bands.drumEnd; r++) {
+        const intensity = intensityAt(c, r);
+        const lane = drumLaneForRow(r, bands.drumStart, bands.drumEnd);
+        if (intensity > laneMax[lane]) laneMax[lane] = intensity;
+      }
+      ['hihat', 'snare', 'kick'].forEach(lane => {
+        if (laneMax[lane] >= threshold) drums.push({ lane, velocity: 0.2 + laneMax[lane] * 0.7 });
+      });
+
+      columns.push({ arp, bass, drums });
+    }
+
+    // ---- sustain layer ("白玉"): one chord-like note group per chord segment, held for its whole duration ----
+    const sustainSegments = chordData.segments.length
+      ? chordData.segments
+      : [{ start: 0, end: numCols, chordIndex: -1 }];
+    const bandRows = bands.sustainEnd - bands.sustainStart;
+    const sustainNotes = sustainSegments.map(seg => {
+      const candidates = [];
+      for (let r = bands.sustainStart; r < bands.sustainEnd; r++) {
+        let maxIntensity = 0;
+        for (let c = seg.start; c < seg.end; c++) {
+          const intensity = intensityAt(c, r);
+          if (intensity > maxIntensity) maxIntensity = intensity;
+        }
+        if (maxIntensity >= threshold) candidates.push({ row: r, intensity: maxIntensity });
+      }
+      candidates.sort((a, b) => b.intensity - a.intensity);
+      const top = candidates.slice(0, 4);
+      const chord = seg.chordIndex >= 0 ? chordData.chords[seg.chordIndex] : null;
+      return top.map(({ row, intensity }) => {
+        const degreeIndex = bandRows - 1 - (row - bands.sustainStart);
+        const octave = Math.floor(degreeIndex / scaleArr.length);
+        const degree = degreeIndex % scaleArr.length;
+        let midi = SUSTAIN_BASE_MIDI + octave * 12 + scaleArr[degree];
+        if (harmonize && chord) midi = snapToChordTone(midi, chord.pitchClasses);
+        return { note: Tone.Frequency(midi, 'midi').toNote(), velocity: 0.15 + intensity * 0.6 };
+      });
+    });
+    chordData.sustainSegments = sustainSegments;
+    chordData.sustainNotes = sustainNotes;
+
+    drawPreview(off, bands);
+    stage.classList.add('show');
+  }
+
+  function drawPreview(off, bands) {
+    const displayW = 720, displayH = Math.round(720 * (numRows / numCols));
+    previewCanvas.width = displayW;
+    previewCanvas.height = displayH;
+    overlay.width = displayW;
+    overlay.height = displayH;
+    pctx.imageSmoothingEnabled = false;
+    pctx.drawImage(off, 0, 0, displayW, displayH);
+
+    // band divider lines + labels: encode the 4-way split directly on the image
+    pctx.save();
+    pctx.strokeStyle = 'rgba(255,176,32,0.55)';
+    pctx.setLineDash([4, 3]);
+    pctx.lineWidth = 1;
+    [bands.sustainEnd, bands.arpEnd, bands.bassEnd].forEach(rowIdx => {
+      const y = (rowIdx / numRows) * displayH;
+      pctx.beginPath(); pctx.moveTo(0, y); pctx.lineTo(displayW, y); pctx.stroke();
+    });
+    pctx.setLineDash([]);
+    pctx.font = "10px 'JetBrains Mono', monospace";
+    pctx.fillStyle = 'rgba(255,176,32,0.9)';
+    pctx.shadowColor = 'rgba(0,0,0,0.8)';
+    pctx.shadowBlur = 3;
+    const labelY = (band) => ((band.from + band.to) / 2 / numRows) * displayH;
+    pctx.fillText('SUSTAIN', 4, labelY({ from: bands.sustainStart, to: bands.sustainEnd }));
+    pctx.fillText('ARP', 4, labelY({ from: bands.arpStart, to: bands.arpEnd }));
+    pctx.fillText('BASS', 4, labelY({ from: bands.bassStart, to: bands.bassEnd }));
+    pctx.fillText('DRUMS', 4, labelY({ from: bands.drumStart, to: bands.drumEnd }));
+    pctx.restore();
+
+    octx.clearRect(0, 0, displayW, displayH);
+  }
+
+  // ---------- playback ----------
+  async function startPlayback() {
+    if (!columns.length) return;
+    await Tone.start();
+    if (!synth) {
+      synth = new Tone.PolySynth(Tone.Synth, {
+        envelope: { attack: 0.005, decay: 0.15, sustain: 0.2, release: 0.3 }
+      }).toDestination();
+    }
+    if (!sustainSynth) {
+      sustainSynth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.8, decay: 0.3, sustain: 0.9, release: 1.8 }
+      }).toDestination();
+      sustainSynth.volume.value = -10;
+    }
+    if (!bassSynth) {
+      bassSynth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.01, decay: 0.2, sustain: 0.4, release: 0.25 }
+      }).toDestination();
+      bassSynth.volume.value = -4;
+    }
+    if (!kickSynth) {
+      kickSynth = new Tone.MembraneSynth({
+        pitchDecay: 0.04, octaves: 6,
+        envelope: { attack: 0.001, decay: 0.35, sustain: 0 }
+      }).toDestination();
+      kickSynth.volume.value = -2;
+    }
+    if (!snareSynth) {
+      snareSynth = new Tone.NoiseSynth({
+        noise: { type: 'white' },
+        envelope: { attack: 0.001, decay: 0.15, sustain: 0 }
+      }).toDestination();
+      snareSynth.volume.value = -10;
+    }
+    if (!hihatSynth) {
+      hihatSynth = new Tone.MetalSynth({
+        envelope: { attack: 0.001, decay: 0.06, release: 0.02 },
+        harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5
+      }).toDestination();
+      hihatSynth.volume.value = -18;
+    }
+    if (!padSynth) {
+      padSynth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.6, decay: 0.4, sustain: 0.8, release: 1.4 }
+      }).toDestination();
+      padSynth.volume.value = parseFloat(padVolSlider.value);
+    }
+    const tempo = parseInt(tempoSlider.value, 10); // steps per second
+    const stepDur = 1 / tempo;
+
+    currentStep = 0;
+    heldPadNotes = [];
+    heldSustainNotes = [];
+    Tone.Transport.cancel();
+    loop = new Tone.Loop((time) => {
+      const seg = chordData.segments.find(s => s.start === currentStep);
+      if (seg) {
+        if (heldPadNotes.length) padSynth.triggerRelease(heldPadNotes, time);
+        const chord = chordData.chords[seg.chordIndex];
+        heldPadNotes = chord.notes;
+        padSynth.triggerAttack(heldPadNotes, time, 0.5);
+      }
+
+      const sustainSeg = chordData.sustainSegments.find(s => s.start === currentStep);
+      if (sustainSeg) {
+        if (heldSustainNotes.length) sustainSynth.triggerRelease(heldSustainNotes, time);
+        const idx = chordData.sustainSegments.indexOf(sustainSeg);
+        const group = chordData.sustainNotes[idx] || [];
+        heldSustainNotes = group.map(n => n.note);
+        if (heldSustainNotes.length) {
+          const avgVel = group.reduce((a, n) => a + n.velocity, 0) / group.length;
+          sustainSynth.triggerAttack(heldSustainNotes, time, avgVel);
+        }
+      }
+
+      const col = columns[currentStep % columns.length];
+      if (col.arp.length) {
+        col.arp.forEach(n => synth.triggerAttackRelease(n.note, stepDur * 0.9, time, n.velocity));
+      }
+      if (col.bass.length) {
+        col.bass.forEach(n => bassSynth.triggerAttackRelease(n.note, stepDur * 0.9, time, n.velocity));
+      }
+      col.drums.forEach(d => {
+        if (d.lane === 'kick') kickSynth.triggerAttackRelease('C1', stepDur * 0.9, time, d.velocity);
+        else if (d.lane === 'snare') snareSynth.triggerAttackRelease(stepDur * 0.5, time, d.velocity);
+        else hihatSynth.triggerAttackRelease(stepDur * 0.3, time, d.velocity);
+      });
+
+      currentStep++;
+      if (currentStep >= columns.length) {
+        Tone.Draw.schedule(() => stopPlayback(), time);
+      }
+    }, stepDur).start(0);
+
+    Tone.Transport.start();
+    isPlaying = true;
+    playBtn.disabled = true;
+    stopBtn.disabled = false;
+    statusText.classList.add('live');
+    statusText.innerHTML = '<span class="dot"></span>再生中';
+    animateScanline();
+  }
+
+  function stopPlayback() {
+    Tone.Transport.stop();
+    Tone.Transport.cancel();
+    if (loop) { loop.dispose(); loop = null; }
+    if (padSynth && heldPadNotes.length) {
+      padSynth.triggerRelease(heldPadNotes, Tone.now());
+      heldPadNotes = [];
+    }
+    if (sustainSynth && heldSustainNotes.length) {
+      sustainSynth.triggerRelease(heldSustainNotes, Tone.now());
+      heldSustainNotes = [];
+    }
+    isPlaying = false;
+    currentStep = 0;
+    playBtn.disabled = false;
+    stopBtn.disabled = true;
+    statusText.classList.remove('live');
+    statusText.innerHTML = '<span class="dot"></span>待機中';
+    if (rafId) cancelAnimationFrame(rafId);
+    octx.clearRect(0, 0, overlay.width, overlay.height);
+  }
+
+  function animateScanline() {
+    if (!isPlaying) return;
+    const w = overlay.width, h = overlay.height;
+    octx.clearRect(0, 0, w, h);
+    const x = (currentStep % columns.length) / columns.length * w;
+    octx.strokeStyle = '#FFB020';
+    octx.lineWidth = 2;
+    octx.shadowColor = '#FFB020';
+    octx.shadowBlur = 8;
+    octx.beginPath();
+    octx.moveTo(x, 0);
+    octx.lineTo(x, h);
+    octx.stroke();
+    rafId = requestAnimationFrame(animateScanline);
+  }
+
+  playBtn.addEventListener('click', startPlayback);
+  stopBtn.addEventListener('click', stopPlayback);
+})();
+</script>
+</body>
+</html>

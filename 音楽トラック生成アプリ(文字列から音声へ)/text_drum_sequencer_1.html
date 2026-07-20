@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>テキスト・ドラムシーケンサー</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    background: #f4f3ef;
+    color: #222;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+  }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  p.sub { color: #666; font-size: 13px; margin-top: 0; margin-bottom: 28px; }
+  h2 { font-size: 14px; font-weight: 600; color: #444; margin: 28px 0 10px; }
+  textarea {
+    width: 100%;
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 14px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #d6d3ca;
+    background: #fff;
+    resize: vertical;
+  }
+  .mapping-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .map-item {
+    background: #fff;
+    border: 1px solid #d6d3ca;
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .map-item label { font-size: 13px; color: #333; }
+  .map-item input[type=text] {
+    width: 70px;
+    text-align: center;
+    font-family: monospace;
+    font-size: 15px;
+    padding: 6px 4px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #444;
+    margin-top: 10px;
+  }
+  .filter-row input[type=checkbox] { width: 16px; height: 16px; }
+  .controls-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 24px 0;
+  }
+  button#playBtn {
+    background: #222;
+    color: #fff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button#playBtn:hover { background: #000; }
+  .slider-group { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #444; }
+  input[type=range] { width: 130px; }
+  #grid { margin-top: 24px; overflow-x: auto; padding-bottom: 8px; }
+  .row { display: flex; align-items: center; margin-bottom: 6px; white-space: nowrap; }
+  .rowlabel { width: 100px; flex-shrink: 0; font-size: 12px; color: #555; }
+  .step {
+    width: 16px; height: 16px; border-radius: 3px;
+    background: #eceae3; border: 1px solid #ddd;
+    margin-right: 3px; display: inline-block;
+  }
+  .step.bar-start { margin-left: 8px; }
+  .step.hit { border: none; }
+  .step.active { outline: 2px solid #333; outline-offset: 1px; }
+  .charlabel {
+    width: 16px; height: 16px; font-size: 9px; color: #aaa;
+    text-align: center; margin-right: 3px; display: inline-block;
+  }
+  .charlabel.bar-start { margin-left: 8px; }
+  .charlabel.active { color: #222; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>テキスト・ドラムシーケンサー</h1>
+<p class="sub">文章を先頭から1文字ずつ16ビートの音として解釈して再生します。文字と音の割り当ては自由に変更できます。</p>
+
+<h2>文字割り当て</h2>
+<div class="mapping-grid">
+  <div class="map-item"><label>ハイハット(クローズ)</label><input type="text" id="map-hhc" value="h"></div>
+  <div class="map-item"><label>ハイハット(オープン)</label><input type="text" id="map-hho" value="o"></div>
+  <div class="map-item"><label>スネア</label><input type="text" id="map-sn" value="s"></div>
+  <div class="map-item"><label>ハンドクラップ</label><input type="text" id="map-cp" value="c"></div>
+  <div class="map-item"><label>バスドラム</label><input type="text" id="map-bd" value="b"></div>
+</div>
+<p class="sub" style="margin-top:8px;margin-bottom:0;">1つの音に複数の文字を割り当てられます(例: バスドラムに「bd」と入力すると b と d の両方がヒットします)</p>
+
+<h2>変換する文章</h2>
+<textarea id="txt" rows="3">but she cracked open a book, holding hush</textarea>
+<div class="filter-row">
+  <input type="checkbox" id="filterChars">
+  <label for="filterChars">スペース・記号等を除外して英字のみで変換する</label>
+</div>
+
+<div class="controls-row">
+  <button id="playBtn">再生</button>
+  <div class="slider-group">
+    <span>テンポ</span>
+    <input type="range" id="tempo" min="60" max="200" value="120" step="1">
+    <span id="tempoOut">120 BPM</span>
+  </div>
+  <div class="slider-group">
+    <span>音量</span>
+    <input type="range" id="volume" min="0" max="100" value="80" step="1">
+    <span id="volOut">80%</span>
+  </div>
+</div>
+
+<div id="grid"></div>
+
+<script>
+(function(){
+  var rows = [
+    { id: 'hhc', label: 'ハイハット(C)', color: '#f0997b' },
+    { id: 'hho', label: 'ハイハット(O)', color: '#f5c4b3' },
+    { id: 'sn',  label: 'スネア',        color: '#378add' },
+    { id: 'cp',  label: 'ハンドクラップ', color: '#d4537e' },
+    { id: 'bd',  label: 'バスドラム',    color: '#ba7517' }
+  ];
+
+  var txt = document.getElementById('txt');
+  var playBtn = document.getElementById('playBtn');
+  var tempo = document.getElementById('tempo');
+  var tempoOut = document.getElementById('tempoOut');
+  var volume = document.getElementById('volume');
+  var volOut = document.getElementById('volOut');
+  var gridEl = document.getElementById('grid');
+
+  var audioCtx = null;
+  var masterGain = null;
+  var playing = false;
+  var timer = null;
+  var stepIndex = 0;
+  var steps = [];
+
+  function getMapping(){
+    var m = {};
+    rows.forEach(function(r){
+      var v = document.getElementById('map-' + r.id).value || '';
+      m[r.id] = v.toLowerCase().split('');
+    });
+    return m;
+  }
+
+  function mappingHas(mapping, key, ch){
+    return mapping[key].length > 0 && mapping[key].indexOf(ch) !== -1;
+  }
+
+  function parsePattern(str){
+    var excludeMode = document.getElementById('filterChars').checked;
+    var chars;
+    if(excludeMode){
+      chars = str.split('').filter(function(c){ return /[a-zA-Z]/.test(c); });
+    } else {
+      chars = str.split('').filter(function(c){ return c !== '\n' && c !== '\r'; });
+    }
+    if(chars.length === 0) chars = ['-'];
+    var rem = chars.length % 16;
+    if(rem !== 0){
+      for(var i=0;i<16-rem;i++) chars.push('-');
+    }
+    return chars;
+  }
+
+  function render(){
+    steps = parsePattern(txt.value);
+    var mapping = getMapping();
+    var html = '';
+    rows.forEach(function(row){
+      html += '<div class="row"><div class="rowlabel">' + row.label + '</div>';
+      for(var i=0;i<steps.length;i++){
+        var ch = steps[i].toLowerCase();
+        var isHit = mappingHas(mapping, row.id, ch);
+        var cls = 'step' + (i % 16 === 0 && i !== 0 ? ' bar-start' : '') + (isHit ? ' hit' : '');
+        var style = isHit ? ' style="background:' + row.color + '"' : '';
+        html += '<span class="' + cls + '" data-i="' + i + '" data-row="' + row.id + '"' + style + '></span>';
+      }
+      html += '</div>';
+    });
+    html += '<div class="row"><div class="rowlabel"></div>';
+    for(var i=0;i<steps.length;i++){
+      var cls = 'charlabel' + (i % 16 === 0 && i !== 0 ? ' bar-start' : '');
+      var display = steps[i] === ' ' ? '·' : steps[i];
+      html += '<span class="' + cls + '" data-i="' + i + '">' + escapeHtml(display) + '</span>';
+    }
+    html += '</div>';
+    gridEl.innerHTML = html;
+  }
+
+  function escapeHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  txt.addEventListener('input', render);
+  document.getElementById('filterChars').addEventListener('change', render);
+  rows.forEach(function(r){
+    document.getElementById('map-' + r.id).addEventListener('input', render);
+  });
+  tempo.addEventListener('input', function(){ tempoOut.textContent = tempo.value + ' BPM'; });
+  volume.addEventListener('input', function(){
+    volOut.textContent = volume.value + '%';
+    if(masterGain) masterGain.gain.value = volume.value / 100;
+  });
+
+  render();
+
+  function ensureAudio(){
+    if(!audioCtx){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = volume.value / 100;
+      masterGain.connect(audioCtx.destination);
+    }
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function playKick(t){
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.frequency.setValueAtTime(150, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.15);
+    gain.gain.setValueAtTime(1, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    osc.connect(gain); gain.connect(masterGain);
+    osc.start(t); osc.stop(t + 0.2);
+  }
+
+  function noiseBuffer(duration){
+    var bufferSize = audioCtx.sampleRate * duration;
+    var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    var data = buffer.getChannelData(0);
+    for(var i=0;i<bufferSize;i++){ data[i] = Math.random()*2-1; }
+    return buffer;
+  }
+
+  function playSnare(t){
+    var noise = audioCtx.createBufferSource();
+    noise.buffer = noiseBuffer(0.2);
+    var filter = audioCtx.createBiquadFilter();
+    filter.type = 'highpass'; filter.frequency.value = 1000;
+    var gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(1, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+    noise.connect(filter); filter.connect(gain); gain.connect(masterGain);
+    noise.start(t); noise.stop(t + 0.15);
+
+    var osc = audioCtx.createOscillator();
+    var oscGain = audioCtx.createGain();
+    osc.type = 'triangle'; osc.frequency.value = 180;
+    oscGain.gain.setValueAtTime(0.7, t);
+    oscGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+    osc.connect(oscGain); oscGain.connect(masterGain);
+    osc.start(t); osc.stop(t + 0.1);
+  }
+
+  function playHihat(t, open){
+    var dur = open ? 0.35 : 0.06;
+    var noise = audioCtx.createBufferSource();
+    noise.buffer = noiseBuffer(dur);
+    var filter = audioCtx.createBiquadFilter();
+    filter.type = 'highpass'; filter.frequency.value = 7000;
+    var gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(open ? 0.4 : 0.5, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + dur);
+    noise.connect(filter); filter.connect(gain); gain.connect(masterGain);
+    noise.start(t); noise.stop(t + dur);
+  }
+
+  function playClap(t){
+    for(var i=0;i<3;i++){
+      var offset = t + i * 0.01;
+      var noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuffer(0.08);
+      var filter = audioCtx.createBiquadFilter();
+      filter.type = 'bandpass'; filter.frequency.value = 1200; filter.Q.value = 1.2;
+      var gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.6, offset);
+      gain.gain.exponentialRampToValueAtTime(0.01, offset + 0.08);
+      noise.connect(filter); filter.connect(gain); gain.connect(masterGain);
+      noise.start(offset); noise.stop(offset + 0.08);
+    }
+  }
+
+  function highlightStep(i){
+    document.querySelectorAll('.step').forEach(function(el){ el.classList.remove('active'); });
+    document.querySelectorAll('.charlabel').forEach(function(el){ el.classList.remove('active'); });
+    document.querySelectorAll('.step[data-i="' + i + '"]').forEach(function(el){ el.classList.add('active'); });
+    document.querySelectorAll('.charlabel[data-i="' + i + '"]').forEach(function(el){ el.classList.add('active'); });
+  }
+
+  function tick(){
+    if(!playing) return;
+    var t = audioCtx.currentTime + 0.02;
+    var ch = steps[stepIndex] ? steps[stepIndex].toLowerCase() : '-';
+    var mapping = getMapping();
+    if(mappingHas(mapping, 'bd', ch)) playKick(t);
+    if(mappingHas(mapping, 'sn', ch)) playSnare(t);
+    if(mappingHas(mapping, 'hhc', ch)) playHihat(t, false);
+    if(mappingHas(mapping, 'hho', ch)) playHihat(t, true);
+    if(mappingHas(mapping, 'cp', ch)) playClap(t);
+    highlightStep(stepIndex);
+    stepIndex = (stepIndex + 1) % steps.length;
+    var bpm = parseInt(tempo.value, 10);
+    var stepMs = (60000 / bpm) / 4;
+    timer = setTimeout(tick, stepMs);
+  }
+
+  playBtn.addEventListener('click', function(){
+    if(!playing){
+      ensureAudio();
+      playing = true;
+      stepIndex = 0;
+      playBtn.textContent = '停止';
+      tick();
+    } else {
+      playing = false;
+      clearTimeout(timer);
+      playBtn.textContent = '再生';
+      document.querySelectorAll('.step').forEach(function(el){ el.classList.remove('active'); });
+      document.querySelectorAll('.charlabel').forEach(function(el){ el.classList.remove('active'); });
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
