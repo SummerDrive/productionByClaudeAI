@@ -1,0 +1,15 @@
+{
+  "hosting": {
+    "public": "public",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "/api/news",
+        "function": {
+          "functionId": "get_news_feed",
+          "region": "asia-northeast1"
+        }
+      }
+    ]
+  }
+}
