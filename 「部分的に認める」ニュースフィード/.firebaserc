@@ -1,5 +1,15 @@
 {
   "projects": {
-    "default": "newsfeedmadebyclaudeai"
-  }
+    "default": "xxxxxxxxxxxxxxxxxxxxxx1"
+  },
+  "targets": {
+    "xxxxxxxxxxxxxxxxxxxxxx1": {
+      "hosting": {
+        "main": [
+          "xxxxxxxxxxxxxxxxxxxxxx1"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

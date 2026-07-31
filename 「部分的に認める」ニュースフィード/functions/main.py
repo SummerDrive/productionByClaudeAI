@@ -61,7 +61,7 @@ SYSTEM_PROMPT = """あなたはニュース要約アシスタントです。以�
 
 def summarize_with_claude(client: AnthropicVertex, title: str, body: str) -> dict:
     message = client.messages.create(
-        model="claude-sonnet-4-5@20250929",  # Vertex AI 上のモデルIDは適宜最新のものに置き換えてください
+        model="claude-haiku-4-5@20251001",  # Vertex AI 上のモデルIDは適宜最新のものに置き換えてください
         max_tokens=500,
         system=SYSTEM_PROMPT,
         messages=[
@@ -121,7 +121,7 @@ def get_news_feed(request):
     project_id = os.environ.get("GCP_PROJECT_ID")
     region = os.environ.get("GCP_REGION", "us-east5")
 
-    client = AnthropicVertex(project_id=project_id, region="global")
+    client = AnthropicVertex(project_id=newsfeedmadebyclaudeai, region="global")
 
     raw_entries = fetch_recent_entries(MAX_ITEMS)
     results = []

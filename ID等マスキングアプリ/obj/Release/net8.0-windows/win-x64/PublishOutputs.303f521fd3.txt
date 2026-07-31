@@ -1,0 +1,2 @@
+C:\Users\ユーザー\OneDrive\Desktop\github\productionByClaudeAI\ID等マスキングアプリ\bin\Release\net8.0-windows\win-x64\publish\MaskingTool.pdb
+C:\Users\ユーザー\OneDrive\Desktop\github\productionByClaudeAI\ID等マスキングアプリ\bin\Release\net8.0-windows\win-x64\publish\MaskingTool.exe

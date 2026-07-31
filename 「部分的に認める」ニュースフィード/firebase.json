@@ -1,12 +1,13 @@
 {
   "hosting": {
+    "target": "main",
     "public": "public",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
         "source": "/api/news",
         "function": {
-          "functionId": "get_news_feed",
+          "functionId": "get-news-feed",
           "region": "asia-northeast1"
         }
       }
