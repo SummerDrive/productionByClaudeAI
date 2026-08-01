@@ -15,7 +15,13 @@ https://production-by-claude-ai.s3.ap-northeast-1.amazonaws.com/text_drum_sequen
 #
 「部分的に認める」ニュースフィード
 
-(vertexのクォータ割り当て申請中)
+vertexのクォータ割り当て申請中
+
+>申請が通らないのでclaude APIに変えて無理くり表示させたものの「部分的に認める」供述の抽出は実装していないと今更言われたwww確認不足www。
+
+>料金がどれだけかかるかわからんので一旦最新ニュースを5件表示させるだけで終わって気が向いたら工事再開します
+
+https://newsfeedmadebyclaudeai.web.app/
 #
 ID等マスキングアプリ
 
