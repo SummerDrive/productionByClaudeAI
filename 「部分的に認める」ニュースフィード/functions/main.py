@@ -19,7 +19,7 @@ import json
 import feedparser
 from datetime import datetime, timezone
 import functions_framework
-from anthropic import AnthropicVertex
+from anthropic import Anthropic
 
 # ------------------------------------------------------------------
 # 情報源の設定 (news-sourcing-policy スキルに準拠)
@@ -59,9 +59,9 @@ SYSTEM_PROMPT = """あなたはニュース要約アシスタントです。以�
 本文に供述に関する記述が無い場合は statement_summary を空文字にしてください。"""
 
 
-def summarize_with_claude(client: AnthropicVertex, title: str, body: str) -> dict:
+def summarize_with_claude(client: Anthropic, title: str, body: str) -> dict:
     message = client.messages.create(
-        model="claude-haiku-4-5@20251001",  # Vertex AI 上のモデルIDは適宜最新のものに置き換えてください
+        model="claude-haiku-4-5-20251001",  # Vertex AI 上のモデルIDは適宜最新のものに置き換えてください
         max_tokens=500,
         system=SYSTEM_PROMPT,
         messages=[
@@ -118,10 +118,8 @@ def get_news_feed(request):
         )
         return ("", 204, headers)
 
-    project_id = os.environ.get("GCP_PROJECT_ID")
-    region = os.environ.get("GCP_REGION", "us-east5")
-
-    client = AnthropicVertex(project_id=newsfeedmadebyclaudeai, region="global")
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    client = Anthropic(api_key=api_key)
 
     raw_entries = fetch_recent_entries(MAX_ITEMS)
     results = []

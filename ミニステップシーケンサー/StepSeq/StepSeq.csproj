@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>StepSeq</RootNamespace>
+    <AssemblyName>StepSeq</AssemblyName>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- .exe自体のアイコン(エクスプローラー/タスクバー/ショートカットに表示される) -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ウィンドウのタイトルバー/タスクバー(実行中)に表示するアイコン -->
+    <Resource Include="Assets\app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- リアルタイム再生・WAV書き出しに使用 -->
+    <PackageReference Include="NAudio" Version="2.2.1" />
+
+    <!--
+      MIDI(.mid)書き出しを実装する段階で以下を追加してください（現時点では未実装）:
+      <PackageReference Include="Melanchall.DryWetMidi" Version="7.1.0" />
+    -->
+  </ItemGroup>
+
+</Project>

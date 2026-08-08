@@ -7,7 +7,7 @@
       {
         "source": "/api/news",
         "function": {
-          "functionId": "get-news-feed",
+          "functionId": "get_news_feed",
           "region": "asia-northeast1"
         }
       }

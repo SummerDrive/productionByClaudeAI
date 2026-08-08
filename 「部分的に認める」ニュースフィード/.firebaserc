@@ -1,12 +1,12 @@
 {
   "projects": {
-    "default": "xxxxxxxxxxxxxxxxxxxxxx1"
+    "default": "newsfeedmadebyclaudeai"
   },
   "targets": {
-    "xxxxxxxxxxxxxxxxxxxxxx1": {
+    "newsfeedmadebyclaudeai": {
       "hosting": {
         "main": [
-          "xxxxxxxxxxxxxxxxxxxxxx1"
+          "newsfeedmadebyclaudeai"
         ]
       }
     }

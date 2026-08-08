@@ -1,0 +1,70 @@
+<Window x:Class="StepSeq.Windows.ExportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="書き出し"
+        Width="460" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{StaticResource BgPanelBrush}">
+    <StackPanel Margin="22">
+        <TextBlock Text="書き出し" FontSize="14" Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" />
+        <TextBlock Text="Audio(.wav)は実際に音声ファイルを生成します。MIDI(.mid)は次のバージョンで対応予定です。"
+                   FontSize="11" Foreground="{StaticResource TextDimBrush}" Margin="0,4,0,18" TextWrapping="Wrap" />
+
+        <TextBlock Text="形式" Style="{StaticResource LabelSmall}" Margin="0,0,0,8" />
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
+            <RadioButton x:Name="WavOption" GroupName="Format" IsChecked="True" Content="Audio（.wav）"
+                         Foreground="{StaticResource TextMutedBrush}" Margin="0,0,20,0" Checked="FormatOption_Changed" />
+            <RadioButton x:Name="MidOption" GroupName="Format" Content="MIDI（.mid）"
+                         Foreground="{StaticResource TextMutedBrush}" Checked="FormatOption_Changed" />
+        </StackPanel>
+
+        <TextBlock Text="対象トラック" Style="{StaticResource LabelSmall}" Margin="0,0,0,8" />
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
+            <CheckBox x:Name="IncludeDrumCheck" Content="ドラムキット" IsChecked="True"
+                      Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,0" />
+            <CheckBox x:Name="IncludeBassCheck" Content="ベース" IsChecked="True"
+                      Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,0" />
+            <CheckBox x:Name="IncludeKeysCheck" Content="キーボード" IsChecked="True"
+                      Foreground="{StaticResource TextMutedBrush}" />
+        </StackPanel>
+
+        <TextBlock Text="範囲" Style="{StaticResource LabelSmall}" Margin="0,0,0,8" />
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
+            <RadioButton x:Name="RangeAllOption" GroupName="Range" IsChecked="True"
+                         Foreground="{StaticResource TextMutedBrush}" Margin="0,0,16,0" />
+            <RadioButton x:Name="RangeLoopOption" GroupName="Range"
+                         Foreground="{StaticResource TextMutedBrush}" />
+        </StackPanel>
+
+        <TextBlock Text="保存先" Style="{StaticResource LabelSmall}" Margin="0,0,0,8" />
+        <Grid Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="SavePathBox" Grid.Column="0" IsReadOnly="True"
+                     Background="{StaticResource BgBaseBrush}" Foreground="{StaticResource TextBrush}"
+                     BorderBrush="{StaticResource LineStrongBrush}" Padding="8" FontFamily="Consolas" FontSize="11" />
+            <Button x:Name="BrowseButton" Grid.Column="2" Content="参照…" Style="{StaticResource PillButton}" Click="BrowseButton_Click" />
+        </Grid>
+
+        <TextBlock x:Name="StatusText" Text="" FontSize="11" Foreground="{StaticResource AccentLoopBrush}" Margin="0,0,0,10" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="CancelButton" Content="キャンセル" Style="{StaticResource PillButton}" Margin="0,0,10,0" Click="CancelButton_Click" />
+            <Button x:Name="ExportButton" Click="ExportButton_Click">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource PillButton}">
+                        <Setter Property="Background" Value="{StaticResource AccentLoopDimBrush}" />
+                        <Setter Property="Foreground" Value="{StaticResource AccentLoopBrush}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource AccentLoopBrush}" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                    </Style>
+                </Button.Style>
+                <TextBlock Text="書き出す" />
+            </Button>
+        </StackPanel>
+    </StackPanel>
+</Window>

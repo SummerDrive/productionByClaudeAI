@@ -1,0 +1,40 @@
+[debug] [2026-08-01T10:17:55.317Z] ----------------------------------------------------------------------
+[debug] [2026-08-01T10:17:55.340Z] Command:       /home/ReadyEnough/.nvm/versions/node/v24.15.0/bin/node /usr/bin/firebase deploy --only hosting
+[debug] [2026-08-01T10:17:55.341Z] CLI Version:   15.24.0
+[debug] [2026-08-01T10:17:55.341Z] Platform:      linux
+[debug] [2026-08-01T10:17:55.341Z] Node Version:  v24.15.0
+[debug] [2026-08-01T10:17:55.342Z] Detected Agent: unknown
+[debug] [2026-08-01T10:17:55.342Z] Time:          Sat Aug 01 2026 19:17:55 GMT+0900 (Japan Standard Time)
+[debug] [2026-08-01T10:17:55.342Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-08-01T10:17:55.362Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-08-01T10:17:58.115Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-01T10:17:58.115Z] > authorizing via signed-in user (namaikicinq@gmail.com)
+[debug] [2026-08-01T10:17:58.115Z] [iam] checking project xxxxxxxxxxxxxxxxxxxxxx1 for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-08-01T10:17:58.116Z] Checked if tokens are valid: false, expires at: 1785305055454
+[debug] [2026-08-01T10:17:58.116Z] Checked if tokens are valid: false, expires at: 1785305055454
+[debug] [2026-08-01T10:17:58.117Z] > refreshing access token with scopes: []
+[debug] [2026-08-01T10:17:58.118Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-08-01T10:17:58.118Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-01T10:17:58.333Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-08-01T10:17:58.333Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-01T10:17:58.428Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/xxxxxxxxxxxxxxxxxxxxxx1:testIamPermissions [none]
+[debug] [2026-08-01T10:17:58.429Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/xxxxxxxxxxxxxxxxxxxxxx1:testIamPermissions  x-goog-user-project=xxxxxxxxxxxxxxxxxxxxxx1
+[debug] [2026-08-01T10:17:58.429Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/xxxxxxxxxxxxxxxxxxxxxx1:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-08-01T10:17:58.488Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-08-01T10:17:58.489Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2026-08-01T10:17:59.148Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/xxxxxxxxxxxxxxxxxxxxxx1:testIamPermissions 400
+[debug] [2026-08-01T10:17:59.149Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/xxxxxxxxxxxxxxxxxxxxxx1:testIamPermissions {"error":{"code":400,"message":"Project 'projects/xxxxxxxxxxxxxxxxxxxxxx1' not found or deleted.","status":"INVALID_ARGUMENT","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"USER_PROJECT_DENIED","domain":"googleapis.com","metadata":{"containerInfo":"projects/xxxxxxxxxxxxxxxxxxxxxx1","consumer":"projects/xxxxxxxxxxxxxxxxxxxxxx1","service":"cloudresourcemanager.googleapis.com"}}]}}
+[debug] [2026-08-01T10:17:59.151Z] [iam] error while checking permissions, command may fail: Request to https://cloudresourcemanager.googleapis.com/v1/projects/xxxxxxxxxxxxxxxxxxxxxx1:testIamPermissions had HTTP Error: 400, Project 'projects/xxxxxxxxxxxxxxxxxxxxxx1' not found or deleted.
+[debug] [2026-08-01T10:17:59.154Z] Checked if tokens are valid: true, expires at: 1785583077337
+[debug] [2026-08-01T10:17:59.154Z] Checked if tokens are valid: true, expires at: 1785583077337
+[debug] [2026-08-01T10:17:59.155Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/xxxxxxxxxxxxxxxxxxxxxx1 [none]
+[debug] [2026-08-01T10:17:59.786Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/xxxxxxxxxxxxxxxxxxxxxx1 403
+[debug] [2026-08-01T10:17:59.787Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/xxxxxxxxxxxxxxxxxxxxxx1 {"error":{"code":403,"message":"The caller does not have permission","status":"PERMISSION_DENIED"}}
+[debug] [2026-08-01T10:17:59.787Z] Request to https://firebase.googleapis.com/v1beta1/projects/xxxxxxxxxxxxxxxxxxxxxx1 had HTTP Error: 403, The caller does not have permission
+[debug] [2026-08-01T10:17:59.924Z] FirebaseError: Request to https://firebase.googleapis.com/v1beta1/projects/xxxxxxxxxxxxxxxxxxxxxx1 had HTTP Error: 403, The caller does not have permission
+    at responseToError (/usr/lib/node_modules/firebase-tools/lib/responseToError.js:53:12)
+    at RetryOperation._fn (/usr/lib/node_modules/firebase-tools/lib/apiv2.js:415:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+[error] 
+[error] Error: Failed to get Firebase project xxxxxxxxxxxxxxxxxxxxxx1. Please make sure the project exists and your account has permission to access it.

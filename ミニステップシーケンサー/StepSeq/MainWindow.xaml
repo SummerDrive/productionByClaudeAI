@@ -1,0 +1,212 @@
+<Window x:Class="StepSeq.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="STEP/SEQ — Drum · Bass · Keys"
+        Icon="Assets/app.ico"
+        Width="1320" Height="820" MinWidth="1200" MinHeight="720"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="InstrumentAccentBrush" Color="#FFE8935A" />
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- ================= TRANSPORT ================= -->
+        <Border Grid.Row="0" Background="{StaticResource BgPanelBrush}"
+                BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="18,10">
+            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                <TextBlock Text="STEP/SEQ" FontWeight="Bold" FontSize="15" Foreground="{StaticResource TextBrush}"
+                           VerticalAlignment="Center" Margin="0,0,4,0" />
+                <TextBlock Text=" — Drum · Bass · Keys" FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                           VerticalAlignment="Center" Margin="0,0,20,0" />
+
+                <Border Style="{StaticResource GroupBorder}">
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="PlayButton" Content="▶" Style="{StaticResource TransportButton}" Click="PlayButton_Click" />
+                        <Button x:Name="StopButton" Content="■" Style="{StaticResource TransportButton}" Margin="6,0,0,0" Click="StopButton_Click" />
+                        <Button x:Name="LoopToggleButton" Content="🔁" Style="{StaticResource TransportButton}" Margin="6,0,0,0" Click="LoopToggleButton_Click" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource GroupBorder}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="TEMPO" Style="{StaticResource LabelSmall}" Margin="0,0,6,0" />
+                        <Button Content="−" Style="{StaticResource StepperButton}" Click="TempoDown_Click" />
+                        <TextBox x:Name="TempoBox" Text="128" Width="40" TextAlignment="Center"
+                                 FontFamily="Consolas" FontSize="14" Foreground="{StaticResource TextBrush}"
+                                 Background="{StaticResource BgBaseBrush}" BorderBrush="{StaticResource LineStrongBrush}"
+                                 BorderThickness="1" Padding="2" VerticalContentAlignment="Center"
+                                 KeyDown="TempoBox_KeyDown" LostFocus="TempoBox_LostFocus"
+                                 PreviewTextInput="TempoBox_PreviewTextInput" GotFocus="TempoBox_GotFocus" />
+                        <Button Content="+" Style="{StaticResource StepperButton}" Click="TempoUp_Click" />
+                        <TextBlock Text="BPM" Style="{StaticResource LabelSmall}" Margin="6,0,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource GroupBorder}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="BARS" Style="{StaticResource LabelSmall}" Margin="0,0,6,0" />
+                        <Button Content="−" Style="{StaticResource StepperButton}" Click="BarsDown_Click" />
+                        <TextBlock x:Name="BarsText" Text="4" FontFamily="Consolas" FontSize="14"
+                                   Foreground="{StaticResource TextBrush}" Width="24" TextAlignment="Center" VerticalAlignment="Center" />
+                        <Button Content="+" Style="{StaticResource StepperButton}" Click="BarsUp_Click" />
+                        <TextBlock Text="小節" Style="{StaticResource LabelSmall}" Margin="6,0,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource GroupBorder}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="SWING" Style="{StaticResource LabelSmall}" Margin="0,0,6,0" />
+                        <Slider x:Name="SwingSlider" Minimum="0" Maximum="75" Value="20" Width="90" ValueChanged="SwingSlider_ValueChanged" VerticalAlignment="Center" />
+                        <TextBlock x:Name="SwingText" Text="20%" FontFamily="Consolas" FontSize="12"
+                                   Foreground="{StaticResource TextMutedBrush}" Width="34" Margin="4,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource GroupBorder}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="MASTER" Style="{StaticResource LabelSmall}" Margin="0,0,6,0" />
+                        <Slider x:Name="MasterSlider" Minimum="0" Maximum="150" Value="80" Width="90" ValueChanged="MasterSlider_ValueChanged" VerticalAlignment="Center" />
+                        <TextBlock x:Name="MasterText" Text="80%" FontFamily="Consolas" FontSize="12"
+                                   Foreground="{StaticResource TextMutedBrush}" Width="34" Margin="4,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource GroupBorder}" BorderBrush="{StaticResource AccentLoopBrush}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="LOOP RANGE" Foreground="{StaticResource AccentLoopBrush}" FontSize="10" Margin="0,0,6,0" VerticalAlignment="Center" />
+                        <Button Content="−" Style="{StaticResource StepperButton}" Click="LoopStartDown_Click" />
+                        <TextBlock x:Name="LoopStartText" Text="1" FontFamily="Consolas" FontSize="12" Foreground="{StaticResource TextBrush}" Width="16" TextAlignment="Center" VerticalAlignment="Center" />
+                        <Button Content="+" Style="{StaticResource StepperButton}" Click="LoopStartUp_Click" />
+                        <TextBlock Text="–" Style="{StaticResource LabelSmall}" Margin="4,0" />
+                        <Button Content="−" Style="{StaticResource StepperButton}" Click="LoopEndDown_Click" />
+                        <TextBlock x:Name="LoopEndText" Text="4" FontFamily="Consolas" FontSize="12" Foreground="{StaticResource TextBrush}" Width="16" TextAlignment="Center" VerticalAlignment="Center" />
+                        <Button Content="+" Style="{StaticResource StepperButton}" Click="LoopEndUp_Click" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock x:Name="PlaybackStatusText" Text="" FontFamily="Consolas" FontSize="11"
+                           Foreground="{StaticResource AccentLoopBrush}" VerticalAlignment="Center" MinWidth="130" Margin="6,0,0,0" />
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="20,0,0,0">
+                    <Button x:Name="SaveButton" Content="保存" Style="{StaticResource PillButton}" Click="SaveButton_Click" />
+                    <Button x:Name="LoadButton" Content="読み込み" Style="{StaticResource PillButton}" Margin="8,0,0,0" Click="LoadButton_Click" />
+                    <Button x:Name="OpenExportButton" Content="書き出し…" Style="{StaticResource PillButton}" Margin="8,0,0,0" Click="OpenExportButton_Click" />
+                </StackPanel>
+            </WrapPanel>
+        </Border>
+
+        <!-- ================= TRACK TABS ================= -->
+        <Border Grid.Row="1" Background="{StaticResource BgPanelBrush}"
+                BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="18,0">
+            <StackPanel x:Name="TrackTabPanel" Orientation="Horizontal" />
+        </Border>
+
+        <!-- ================= INSTRUMENT ROW ================= -->
+        <Border Grid.Row="2" Background="{StaticResource BgPanel2Brush}"
+                BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="18,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="音色" Style="{StaticResource LabelSmall}" Margin="0,0,10,0" />
+                <StackPanel x:Name="InstrumentPanel" Orientation="Horizontal" />
+            </StackPanel>
+        </Border>
+
+        <!-- ================= BAR TABS ================= -->
+        <Border Grid.Row="3" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="18,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="BAR" Style="{StaticResource LabelSmall}" Margin="0,0,10,0" />
+                <StackPanel x:Name="BarTabPanel" Orientation="Horizontal" />
+                <TextBlock x:Name="LoopSummaryText" Text="🔁 Bar 1–4" Foreground="{StaticResource AccentLoopBrush}"
+                           FontSize="11" Margin="16,0,0,0" VerticalAlignment="Center" />
+                <TextBlock Text="16 steps / bar（16分音符）／ 小節ごとに独立してパターンを保持" Foreground="{StaticResource TextDimBrush}"
+                           FontSize="11" Margin="20,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <!-- ================= COPY TOOLS ================= -->
+        <Border Grid.Row="4" Background="{StaticResource BgPanel2Brush}"
+                BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="18,8">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="小節コピー" Style="{StaticResource LabelSmall}" Margin="0,0,10,0" />
+                <ComboBox x:Name="CopySourceCombo" Width="80" Margin="0,0,8,0" />
+                <TextBlock Text="→" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <ComboBox x:Name="CopyTargetCombo" Width="110" Margin="0,0,10,0" />
+                <Button x:Name="CopyExecButton" Content="コピー実行" Style="{StaticResource PillButton}" Click="CopyExecButton_Click" />
+                <TextBlock x:Name="CopyHintText" Text="" Foreground="{StaticResource TextDimBrush}" FontSize="10" Margin="10,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <!-- ================= BODY ================= -->
+        <Grid Grid.Row="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="260" />
+            </Grid.ColumnDefinitions>
+
+            <ScrollViewer Grid.Column="0" Padding="18,16,18,24">
+                <ContentControl x:Name="EditorHost" />
+            </ScrollViewer>
+
+            <Border Grid.Column="1" Background="{StaticResource BgPanelBrush}"
+                    BorderBrush="{StaticResource LineBrush}" BorderThickness="1,0,0,0" Padding="16">
+                <StackPanel>
+                    <TextBlock Text="状態" Style="{StaticResource LabelSmall}" Margin="0,0,0,8" />
+                    <Border Background="{StaticResource BgPanel2Brush}" BorderBrush="{StaticResource LineBrush}"
+                            BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,18">
+                        <TextBlock x:Name="StatusNoteText" Text="Bar 1 を編集中（ドラムキット）"
+                                   Foreground="{StaticResource TextDimBrush}" FontSize="11" TextWrapping="Wrap" />
+                    </Border>
+
+                    <TextBlock Text="トラックボリューム" Style="{StaticResource LabelSmall}" Margin="0,0,0,10" />
+
+                    <TextBlock Text="ドラムキット" Foreground="{StaticResource AccentDrumBrush}" FontSize="12" Margin="0,0,0,4" />
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="40" />
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="DrumVolSlider" Grid.Column="0" Minimum="0" Maximum="150" Value="100" ValueChanged="DrumVolSlider_ValueChanged" />
+                        <TextBlock x:Name="DrumVolText" Grid.Column="1" Text="100%" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <TextBlock Text="ベース" Foreground="{StaticResource AccentBassBrush}" FontSize="12" Margin="0,0,0,4" />
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="40" />
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="BassVolSlider" Grid.Column="0" Minimum="0" Maximum="150" Value="100" ValueChanged="BassVolSlider_ValueChanged" />
+                        <TextBlock x:Name="BassVolText" Grid.Column="1" Text="100%" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <TextBlock Text="キーボード" Foreground="{StaticResource AccentKeysBrush}" FontSize="12" Margin="0,0,0,4" />
+                    <Grid Margin="0,0,0,18">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="40" />
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="KeysVolSlider" Grid.Column="0" Minimum="0" Maximum="150" Value="100" ValueChanged="KeysVolSlider_ValueChanged" />
+                        <TextBlock x:Name="KeysVolText" Grid.Column="1" Text="100%" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <TextBlock Text="このアプリでできること" Style="{StaticResource LabelSmall}" Margin="0,0,0,8" />
+                    <Border Background="{StaticResource BgPanel2Brush}" BorderBrush="{StaticResource LineBrush}"
+                            BorderThickness="1" CornerRadius="6" Padding="10">
+                        <TextBlock Foreground="{StaticResource TextDimBrush}" FontSize="11" TextWrapping="Wrap" LineHeight="18"
+                                   Text="・小節ごとに独立してパターンを配置&#10;・現在のトラックのみ、任意の小節から別の小節(または全小節)へコピー&#10;・▶再生で配置通りに実際に音が鳴ります&#10;・Master/トラックごとのボリューム調整&#10;・キーボードのサスティンペダル: 踏んでいる間は音を伸ばし、離れている場所は短く切る&#10;・保存/読み込みでプロジェクトをJSONファイルとして保存・再編集&#10;・書き出し: Audio(.wav)は実ファイルを生成（MIDIは未実装）" />
+                    </Border>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

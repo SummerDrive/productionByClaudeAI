@@ -1,0 +1,9 @@
+<UserControl x:Class="StepSeq.Views.PianoRollView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <StackPanel x:Name="OctaveBar" Orientation="Horizontal" Margin="0,0,0,10" />
+        <StackPanel x:Name="RowsPanel" />
+        <Border x:Name="SustainLaneRoot" Visibility="Collapsed" Margin="0,10,0,0" Padding="0,8,0,0" />
+    </StackPanel>
+</UserControl>
